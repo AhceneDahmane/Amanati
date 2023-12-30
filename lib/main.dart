@@ -3,6 +3,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl_phone_number_input/intl_phone_number_input.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class DateInputFormatter extends TextInputFormatter {
   @override
@@ -649,7 +650,7 @@ class _FourthPageState extends State<FourthPage> {
       length: 2, // Number of tabs
       child: Scaffold(
         appBar: AppBar(
-          title: Text('Dashboard'),
+          title: Text('Home'),
           // Only show the TabBar in the AppBar when Home (index 0) is selected
           bottom: _selectedIndex == 0 ? TabBar(
             tabs: [
@@ -675,9 +676,10 @@ class _FourthPageState extends State<FourthPage> {
         bottomNavigationBar: BottomNavigationBar(
           items: const <BottomNavigationBarItem>[
             BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-            BottomNavigationBarItem(icon: Icon(Icons.add), label: 'Add'),
             BottomNavigationBarItem(icon: Icon(Icons.history), label: 'History'),
+            BottomNavigationBarItem(icon: Icon(Icons.map), label: 'Map'),
             BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'Settings'),
+
           ],
           currentIndex: _selectedIndex,
           selectedItemColor: Color(0xff7b3910), // Color of the selected item
@@ -697,9 +699,9 @@ class _FourthPageState extends State<FourthPage> {
     // Placeholder widgets for each tab
     switch (index) {
       case 1:
-        return Center(child: Text('Add Content'));
-      case 2:
         return Center(child: Text('History Content'));
+      case 2:
+        return Center(child: Text('Map Content'));  // This is your Map tab
       case 3:
         return Center(child: Text('Settings Content'));
       default:
@@ -713,62 +715,243 @@ class _FourthPageState extends State<FourthPage> {
     });
   }
 }
-class ProfessionnelsTab extends StatelessWidget {
+
+
+class ProfessionnelsTab extends StatefulWidget {
   @override
-  Widget build(BuildContext context) {
-    return ListView(
-      children: <Widget>[
-        customListTilePro(
-          context,
-          companyName: 'Business A',
-          shipperName: 'John Doe',
-          departureDay: '2023-12-01',
-          departureLocation : "Paris",
-          arrivalLocation: "Alger",
-          minWeight: '10 kg',
-          maxWeight: '100 kg',
-          priceKg: 2,
-          imageUrl: 'assets/bateau.png', // Replace with your image asset
-          averageRating: 4.5,
-          totalReviews: 120,
-          onCallPressed: () => _makePhoneCall(Uri.parse("tel:4528698569")),
-          onMapPressed: () => _openMap(48.8566, 2.3522), // Replace with your desired coordinates
-        ),
-        customListTilePro(
-          context,
-          companyName: 'Business B',
-          shipperName: 'John Doe',
-          departureDay: '2023-12-01',
-          departureLocation : "Paris",
-          arrivalLocation: "Alger",
-          minWeight: '1 kg',
-          maxWeight: '50 kg',
-          priceKg: 4.5,
-          imageUrl: 'assets/bateau.png', // Replace with your image asset
-          averageRating: 4.5,
-          totalReviews: 120,
-          onCallPressed: () => _makePhoneCall(Uri.parse("tel:4528698569")),
-          onMapPressed: () => _openMap(48.8566, 2.3522), // Replace with your desired coordinates
-        ),
-        customListTilePro(
-          context,
-          companyName: 'Business C',
-          shipperName: 'John Doe',
-          departureDay: '2023-12-01',
-          departureLocation : "Paris",
-          arrivalLocation: "Alger",
-          minWeight: '1 kg',
-          maxWeight: '10 kg',
-          priceKg: 3.5,
-          imageUrl: 'assets/bateau.png', // Replace with your image asset
-          averageRating: 4.5,
-          totalReviews: 120,
-          onCallPressed: () => _makePhoneCall(Uri.parse("tel:4528698569")),
-          onMapPressed: () => _openMap(48.8566, 2.3522), // Replace with your desired coordinates
-        ),
-      ],
+  _ProfessionnelsTabState createState() => _ProfessionnelsTabState();
+}
+
+class _ProfessionnelsTabState extends State<ProfessionnelsTab> with AutomaticKeepAliveClientMixin {
+  List<Map<String, dynamic>> items = [
+    {
+      'companyName': 'Starbucks',
+      'description': 'Enjoy your coffee at Starbucks Paris',
+      'bannerImageUrl': 'assets/banner.jpg',
+      'profileImageUrl': 'assets/profile.png',
+      'averageRating': 4.5,
+      'totalReviews': 120,
+      'pricePerKg': 3.0,
+      'departureDate': '2024-02-23',
+      'distance': '5 km',
+    },
+    // Add more initial items here if needed
+  ];
+
+  void _addItem(Map<String, dynamic> newItem) {
+    setState(() {
+      items.add(newItem);
+    });
+  }
+
+  void _showAddItemForm() {
+    final _formKey = GlobalKey<FormState>();
+    // Create controllers for text fields
+    final companyNameController = TextEditingController();
+    final descriptionController = TextEditingController();
+    final bannerImageUrlController = TextEditingController();
+    final profileImageUrlController = TextEditingController();
+    final averageRatingController = TextEditingController();
+    final totalReviewsController = TextEditingController();
+    final pricePerKgController = TextEditingController();
+    final departureDateController = TextEditingController();
+    final distanceController = TextEditingController();
+
+    // Show the dialog
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Ajouter un nouveau livreur '),
+          content: Form(
+            key: _formKey,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  // Style TextFormFields
+                  TextFormField(
+                    controller: companyNameController,
+                    decoration: InputDecoration(labelText: 'Company Name'),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter a company name';
+                      }
+                      return null;
+                    },
+                  ),
+                  TextFormField(
+                    controller: descriptionController,
+                    decoration: InputDecoration(labelText: 'Description'),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter a description';
+                      } else if (value.length > 30) {
+                        return 'Description should be less than 30 characters';
+                      }
+                      return null;
+                    },
+                  ),
+                  TextFormField(
+                    controller: pricePerKgController,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(labelText: 'Price per Kg'),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter a valid price';
+                      } else if (double.tryParse(value) == null) {
+                        return 'Please enter a valid number';
+                      }
+                      return null;
+                    },
+                  ),
+                  TextFormField(
+                    controller: departureDateController,
+                    keyboardType: TextInputType.datetime,
+                    decoration: InputDecoration(labelText: 'Date de départ (yyyy/mm/dd)'),
+                    validator: (value) {
+                      RegExp datePattern = RegExp(r"^\d{4}/\d{2}/\d{2}$");
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter a valid date';
+                      } else if (!datePattern.hasMatch(value)) {
+                        return 'Invalid date format. Use yyyy/mm/dd';
+                      }
+                      return null;
+                    },
+                  ),
+                  ElevatedButton(
+                    onPressed: () {
+                      if (_formKey.currentState!.validate()) {
+                        // Call _addItem to add the item to the list
+                        _addItem({
+                          'companyName': companyNameController.text,
+                          'description': descriptionController.text,
+                          'bannerImageUrl': "assets/banner.jpg",
+                          'profileImageUrl': "assets/profile.png",
+                          'averageRating': 5,
+                          'totalReviews': 76,
+                          'pricePerKg': double.parse(pricePerKgController.text),
+                          'departureDate': departureDateController.text,
+                          'distance': 5,
+                        });
+
+                        // Clear the text fields
+                        companyNameController.clear();
+                        descriptionController.clear();
+                        bannerImageUrlController.clear();
+                        profileImageUrlController.clear();
+                        averageRatingController.clear();
+                        totalReviewsController.clear();
+                        pricePerKgController.clear();
+                        departureDateController.clear();
+                        distanceController.clear();
+
+                        // Close the dialog
+                        Navigator.of(context).pop();
+                      }
+                    },
+                    child: Text('Ajouter'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.of(context).pop(); // Close the dialog without adding anything
+                    },
+                    child: Text('Annuler'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
+  @override
+  bool get wantKeepAlive => true; // Add this line
+
+  Widget build(BuildContext context) {
+    super.build(context); // Add this line
+    return Scaffold(
+      body: ListView.builder(
+        itemCount: items.length,
+        itemBuilder: (context, index) {
+          var item = items[index];
+          return _buildListItem(
+            context,
+            item['companyName'],
+            item['description'],
+            item['bannerImageUrl'],
+            item['profileImageUrl'],
+           4.5,
+            10,
+            item['pricePerKg'],
+            item['departureDate'],
+            "10.0",
+          );
+        },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _showAddItemForm,
+        child: Icon(Icons.add),
+        backgroundColor: Color(0xff7b3910),  // Background color of the button
+        foregroundColor: Colors.white,       // Color of the icon and text (if any)
+        elevation: 5.0,                      // Shadow elevation
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(16.0)), // Rounded shape
+        ),
+      ),
+
+    );
+  }
+
+  Widget _buildListItem(
+      BuildContext context,
+      String companyName,
+      String description,
+      String bannerImageUrl,
+      String profileImageUrl,
+      double averageRating,
+      int totalReviews,
+      double pricePerKg,
+      String departureDate,
+      String distance) {
+    return Card(
+      elevation: 5,
+      margin: EdgeInsets.all(8),
+      child: Column(
+        children: [
+          Image.asset(bannerImageUrl, fit: BoxFit.cover), // Banner Image
+          ListTile(
+            leading: CircleAvatar(
+              backgroundImage: AssetImage(profileImageUrl), // Profile Image
+            ),
+            title: Text(companyName, style: TextStyle(fontWeight: FontWeight.bold)), // Business Name
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text("$description"), // Description
+                Text("Collect before: $departureDate"), // Description
+                Row(
+                  children: [
+                    Icon(Icons.star, color: Color(0xff7b3910),), // Star Icon
+                    SizedBox(width: 4),
+                    Text("$averageRating (${totalReviews.toString()}) | $distance away"),
+                    Text("\t\t\t \$${pricePerKg.toStringAsFixed(2)}/kg",
+                        style: TextStyle(
+                          color: Color(0xff7b3910),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,)),
+                  ],
+                ),
+
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
   void _makePhoneCall(Uri uri) async {
     if (await canLaunchUrl(uri)) {
@@ -777,7 +960,6 @@ class ProfessionnelsTab extends StatelessWidget {
       throw 'Could not launch $uri';
     }
   }
-
   void _openMap(double latitude, double longitude) async {
     var googleMapsUrl = "google.navigation:q=$latitude,$longitude&mode=d";
     var googleMapsFallbackUrl = "https://www.google.com/maps/dir/?api=1&destination=$latitude,$longitude";
@@ -795,6 +977,7 @@ class ProfessionnelsTab extends StatelessWidget {
       throw 'Could not launch the map';
     }
   }
+
   Widget customListTilePro(BuildContext context, {
     required String companyName,
     required String shipperName,
@@ -825,7 +1008,7 @@ class ProfessionnelsTab extends StatelessWidget {
           Row(
             children: <Widget>[
               Icon(Icons.star, color: Colors.amber),
-              Text('$averageRating ($totalReviews reviews)'),
+              Text('$averageRating ($totalReviews)'),
               IconButton(
                 icon: Icon(Icons.phone),
                 onPressed: onCallPressed,
@@ -843,7 +1026,7 @@ class ProfessionnelsTab extends StatelessWidget {
       },
     );
   }
-}
+
 
 class ParticuliersTab extends StatelessWidget {
   @override
@@ -862,6 +1045,8 @@ class ParticuliersTab extends StatelessWidget {
           maxWeight: '20 kg',
           dimensions: '10 x 5 x 8',
           price: 50,
+          averageRating : 5,
+          totalReviews : 10,
           rating: 4.5,
           onCallPressed: () {
             // Handle phone call logic
@@ -882,6 +1067,8 @@ class ParticuliersTab extends StatelessWidget {
           maxWeight: '15 kg',
           dimensions: '8 x 4 x 6',
           price: 40,
+          averageRating : 5,
+          totalReviews : 10,
           rating: 4.0,
           onCallPressed: () {
             // Handle phone call logic
@@ -907,9 +1094,11 @@ class ParticuliersTab extends StatelessWidget {
         required String maxWeight,
         required String dimensions,
         required double price,
-        required double rating,
         required VoidCallback onCallPressed,
         required VoidCallback onMapPressed,
+        required double rating,
+        required double averageRating,
+        required int totalReviews,
       }) {
     return Card(
       elevation: 5,
@@ -931,12 +1120,11 @@ class ParticuliersTab extends StatelessWidget {
             Text('Dimensions: $dimensions'),
             Text('Price: $price euros'),
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: <Widget>[
                 Row(
                   children: <Widget>[
                     Icon(Icons.star, color: Colors.amber),
-                    Text('$rating'),
+                    Text('$averageRating ($totalReviews)'),
                   ],
                 ),
                 Row(
